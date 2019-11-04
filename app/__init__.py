@@ -75,6 +75,8 @@ async def GeneratePrepared():
     return(prepared)
 
 async def init_pg(app):
+	
+	conf = app['config']['postgres']
 	prepared = await GeneratePrepared()
 	engine = await aiopg.sa.create_engine(
 	    database='test',
@@ -89,7 +91,8 @@ async def init_pg(app):
 	DBSession = sessionmaker(bind=engine)
 	session = DBSession()
 	session.execute(prepared)
-	return app['db'] = engine
+	
+	app['db'] = engine
 
 async def close_pg(app):
     app['db'].close()
@@ -105,47 +108,29 @@ async def close_pg(app):
 #    app.on_cleanup.append(close_redis)
 #    app['redis_pool'] = pool
 #    return pool
-#
-#class GetTile(tornado.web.RequestHandler):
-#    def get(self, zoom,x,y):
-#        self.set_header("Content-Type", "application/x-protobuf")
-#        self.set_header("Content-Disposition", "attachment")
-#        self.set_header("Access-Control-Allow-Origin", "*")
-#        response = get_mvt(zoom,x,y)
-#        self.write(response)
-#
-#async def handle_post(request):
-#    try:
-#        # Success path where name is set
-#        response_obj = { 'status' : 'success' }
-#        # Process our new user
-#        response_obj['body'] = request.query['name']
-#        # return a success json response with status code 200 i.e. 'OK'
-#        return web.Response(text=json.dumps(response_obj), status=200)
-#    except Exception as e:
-#        # Failed path where name is not set
-#        response_obj = { 'status' : 'failed', 'reason': str(e) }
-#        # return failed with a status code of 500 i.e. 'Server Error'
-#        return web.Response(text=json.dumps(response_obj), status=500)
-#app.add_routes([web.get("/tiles/{z}/{x}/{y}.pbf", GetTile)])
 ##prepare the routes
 routes = web.RouteTableDef()
 
-@docs(tags=['mytag'],
+@docs(tags=['tiles endpoint'],
       summary='Test method summary',
       description='Test method description')
 @request_schema(RequestTileSchema())
 @response_schema(ResponseSchema(), 200)
-@routes.get('/tiles/{z}/{x}/{y}.pbf')
+@routes.get('/tiles/{z:([0-9]+)}/{x:([0-9]+)}/{y:([0-9]+)}.pbf')
 async def get_mvt(request):
+	headers = {"Content-Type":"application/x-protobuf",
+	"Content-Disposition": "attachment",
+	"Access-Control-Allow-Origin": "*"
+	}
     final_query = f"EXECUTE gettile({request.query['sql']}, {request.match_info['z']}, {request.match_info['x']}, {request.match_info['y']});"
     async with request.app['db'].acquire() as conn:
     	records = await conn.execute(final_query).fetchall()
         response = [dict(q) for q in records]
+    content = io.BytesIO(response).getvalue()
 
-    return web.response(io.BytesIO(response).getvalue())
+    return web.response(body= content, headers=headers)
 
-@docs(tags=['mytag'],
+@docs(tags=['query endpoint'],
       summary='Test method summary',
       description='Test method description')
 @request_schema(RequestSchema())
@@ -157,7 +142,8 @@ async def hello_world(request):
 	final_query = f"EXECUTE {request.query['sql']}"
 	async with request.app['db'].acquire() as conn:
     	records = await conn.execute(final_query).fetchall()
-        response = [dict(q) for q in records] 
+    	logging.info(records)
+        response = [io.BytesIO(q).getvalue() for q in records] 
 	
 	return web.json_response({'msg': 'done', 'data': response})
 
@@ -167,6 +153,7 @@ async def init(loop):
 	
 
     app = web.Application(loop=loop)
+    app['config'] = os.environ
     app.on_startup.append(init_pg)
     app.on_cleanup.append(close_pg)
     app.add_routes(routes)

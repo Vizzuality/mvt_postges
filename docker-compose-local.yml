@@ -35,6 +35,11 @@ services:
     environment:
       PORT: 5100
       HOST: "0.0.0.0"
+      database: test
+      user: postgres
+      password: postgres
+      minsize: 1
+      maxsize: 5
     depends_on:
     - teste-postgres-compose
     - teste-pgadmin-compose
