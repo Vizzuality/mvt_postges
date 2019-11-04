@@ -59,11 +59,10 @@ class RequestTileSchema(Schema):
     x = fields.Int(description='x')
     y = fields.Int(description='y')
 
-
 class ResponseSchema(Schema):
     msg = fields.Str()
-    data = fields.List()
-###functions to get the Tiles
+    data = fields.List(fields.Dict())
+##functions to get the Tiles
 
 async def GeneratePrepared():
     prepared = f"""PREPARE gettile(text, numeric, numeric, numeric) AS 
@@ -76,21 +75,21 @@ async def GeneratePrepared():
 
 async def init_pg(app):
 	
-	conf = app['config']['postgres']
-	prepared = await GeneratePrepared()
+	#conf = app['config']
+	#prepared = await GeneratePrepared()
 	engine = await aiopg.sa.create_engine(
 	    database='test',
 	    user=conf['user'],
 	    password=conf['password'],
-	    host=conf['host'],
-	    port=conf['port'],
+	    host='localhost',
+	    port=conf['psqlPort'],
 	    minsize=conf['minsize'],
 	    maxsize=conf['maxsize'],
 	)
-	inspector = inspect(engine)
-	DBSession = sessionmaker(bind=engine)
-	session = DBSession()
-	session.execute(prepared)
+	#inspector = inspect(engine)
+	#DBSession = sessionmaker(bind=engine)
+	#session = DBSession()
+	#session.execute(prepared)
 	
 	app['db'] = engine
 
@@ -115,20 +114,20 @@ routes = web.RouteTableDef()
       summary='Test method summary',
       description='Test method description')
 @request_schema(RequestTileSchema())
-@response_schema(ResponseSchema(), 200)
+#@response_schema(ResponseSchema(), 200)
 @routes.get('/tiles/{z:([0-9]+)}/{x:([0-9]+)}/{y:([0-9]+)}.pbf')
 async def get_mvt(request):
 	headers = {"Content-Type":"application/x-protobuf",
 	"Content-Disposition": "attachment",
 	"Access-Control-Allow-Origin": "*"
 	}
-    final_query = f"EXECUTE gettile({request.query['sql']}, {request.match_info['z']}, {request.match_info['x']}, {request.match_info['y']});"
-    async with request.app['db'].acquire() as conn:
-    	records = await conn.execute(final_query).fetchall()
-        response = [dict(q) for q in records]
-    content = io.BytesIO(response).getvalue()
+	final_query = f"EXECUTE gettile({request.query['sql']}, {request.match_info['z']}, {request.match_info['x']}, {request.match_info['y']});"
+	async with request.app['db'].acquire() as conn:
+		records = await conn.execute(final_query).fetchall()
+		response = [dict(q) for q in records]
+	content = io.BytesIO(response).getvalue()
 
-    return web.response(body= content, headers=headers)
+	return web.response(body= content, headers=headers)
 
 @docs(tags=['query endpoint'],
       summary='Test method summary',
@@ -141,11 +140,11 @@ async def hello_world(request):
 	logging.info(request.app)
 	final_query = f"EXECUTE {request.query['sql']}"
 	async with request.app['db'].acquire() as conn:
-    	records = await conn.execute(final_query).fetchall()
-    	logging.info(records)
-        response = [io.BytesIO(q).getvalue() for q in records] 
+		records = await conn.execute(final_query).fetchall()
+		logging.info(records)
+		#response = [io.BytesIO(q).getvalue() for q in records] 
 	
-	return web.json_response({'msg': 'done', 'data': response})
+	return web.json_response({'msg': 'done', 'data': records})
 
 
 

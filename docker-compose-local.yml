@@ -38,11 +38,14 @@ services:
       database: test
       user: postgres
       password: postgres
+      psqlPort: 5432
       minsize: 1
       maxsize: 5
     depends_on:
     - teste-postgres-compose
     - teste-pgadmin-compose
+    networks:
+      - postgres-compose-network
 
   teste-redis:
     image: redis:4
