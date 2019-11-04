@@ -1,0 +1,5 @@
+aiohttp
+aiohttp-apispec
+aiohttp-swagger
+aiopg[sa]
+sqlalchemy

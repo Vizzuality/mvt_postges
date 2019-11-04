@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  teste-postgres-compose:
+    image: geographica/postgis:dev_diplodocus
+    environment:
+      POSTGRES_PASSWD: "postgres"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${LOCAL_DATABASE}:/data 
+    networks:
+      - postgres-compose-network
+      
+  teste-pgadmin-compose:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "test@vizzuality.com"
+      PGADMIN_DEFAULT_PASSWORD: "PgAdmin2019!"
+    ports:
+      - "16543:80"
+    depends_on:
+      - teste-postgres-compose
+    networks:
+      - postgres-compose-network
+
+  teste-api-compose:
+    build: .
+    ports:
+      - "5100:5100"
+    volumes:
+      - .:/opt/app:consistent
+    command: develop
+    restart: always
+    environment:
+      PORT: 5100
+      HOST: "0.0.0.0"
+    depends_on:
+    - teste-postgres-compose
+    - teste-pgadmin-compose
+
+  teste-redis:
+    image: redis:4
+    ports:
+        - 6379:6379
+networks: 
+  postgres-compose-network:
+    driver: bridge
+
+volumes:
+  .:
+    external: true

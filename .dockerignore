@@ -1,0 +1,7 @@
+*.yml
+/venv
+*.pyc
+*.pem
+*.env
+*.log
+.DS_STORE
