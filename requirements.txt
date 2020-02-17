@@ -3,3 +3,4 @@ aiohttp-apispec
 aiohttp-swagger
 aiopg[sa]
 sqlalchemy
+psycopg2== 2.8.4

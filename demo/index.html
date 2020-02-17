@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Mapbox GL JS Examples</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.1.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.1.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+<script>
+var hoveredStateId = null;
+var map = new mapboxgl.Map({
+    'container': 'map',
+    'zoom': 5,
+    'center': [14.150390625,
+          0.7031073524364909], // New York
+    'style': {
+        'version': 8,
+        'sources': {
+            'carto-dark': {
+                'type': 'raster',
+                'tiles': [
+                    "http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                    "http://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                    "http://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                    "http://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                ]
+            },
+            'postgis-tiles': {
+                'type': 'vector',
+                'tiles': [
+                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf"
+                ]
+            }
+
+        },
+        'layers': [{
+            'id': 'carto-dark-layer',
+            'type': 'raster',
+            'source': 'carto-dark',
+            'minzoom': 0,
+            'maxzoom': 22
+        },{
+            'id': 'postgis-tiles-layer',
+            'type': 'fill',
+            'source': 'postgis-tiles',
+            // ST_AsMVT() uses 'default' as layer name
+            'source-layer': 'layer0', 
+            'minzoom': 0,
+            'maxzoom': 22,
+            'paint': {
+                'fill-opacity': [
+                                'case',
+                                ['boolean', ['feature-state', 'hover'], false],
+                                1,
+                                0.5
+                                ],
+                'fill-color': 'red'
+            }
+        }]
+    }
+});
+
+
+map.addControl(new mapboxgl.NavigationControl());
+map.on('load', function() {
+    map.on('mousemove', 'postgis-tiles-layer', function(e) {
+        if (e.features.length > 0) {
+            console.info(e.features[0])
+            console.info(hoveredStateId)
+            if (hoveredStateId) {
+            map.setFeatureState(
+                { source: 'postgis-tiles', sourceLayer: 'layer0',  id: hoveredStateId },
+                { hover: false }
+            );
+            }
+            hoveredStateId = e.features[0].id;
+            map.setFeatureState(
+                { source: 'postgis-tiles', sourceLayer: 'layer0',  id: hoveredStateId },
+                { hover: true }
+            );
+        }
+    });
+    
+    // When the mouse leaves the state-fill layer, update the feature state of the
+    // previously hovered feature.
+    map.on('mouseleave', 'postgis-tiles-layer', function() {
+    if (hoveredStateId) {
+    map.setFeatureState(
+    { source: 'postgis-tiles', sourceLayer: 'layer0',  id: hoveredStateId },
+    { hover: false }
+    );
+    }
+    hoveredStateId = null;
+    });
+});
+</script>
+

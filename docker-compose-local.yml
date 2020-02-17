@@ -1,60 +1,63 @@
 version: '3'
 
 services:
-  teste-postgres-compose:
+  geo-postgres:
     image: geographica/postgis:dev_diplodocus
+    container_name: geo-postgres
     environment:
       POSTGRES_PASSWD: "postgres"
     ports:
       - "5432:5432"
     volumes:
-      - ${LOCAL_DATABASE}:/data 
+      - ${LOCAL_DATABASE}:/data
+      - ./import_data:/data_import
     networks:
       - postgres-compose-network
-      
-  teste-pgadmin-compose:
+
+  pgadmin:
     image: dpage/pgadmin4
+    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: "test@vizzuality.com"
       PGADMIN_DEFAULT_PASSWORD: "PgAdmin2019!"
     ports:
       - "16543:80"
     depends_on:
-      - teste-postgres-compose
+      - geo-postgres
     networks:
       - postgres-compose-network
 
-  teste-api-compose:
+  redis:
+        image: redis:4
+        ports:
+            - 6379:6379
+        networks:
+          - postgres-compose-network
+
+  api-vl:
+    container_name: api-vl
     build: .
     ports:
       - "5100:5100"
     volumes:
-      - .:/opt/app:consistent
+      - ./app:/opt/app
     command: develop
     restart: always
     environment:
       PORT: 5100
       HOST: "0.0.0.0"
-      database: test
+      database: otp
       user: postgres
       password: postgres
       psqlPort: 5432
-      minsize: 1
-      maxsize: 5
+      psqlHost: "geo-postgres"
     depends_on:
-    - teste-postgres-compose
-    - teste-pgadmin-compose
+    - geo-postgres
+    - pgadmin
+    - redis
     networks:
       - postgres-compose-network
 
-  teste-redis:
-    image: redis:4
-    ports:
-        - 6379:6379
 networks: 
   postgres-compose-network:
     driver: bridge
-
-volumes:
-  .:
-    external: true

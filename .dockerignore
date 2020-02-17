@@ -4,4 +4,12 @@
 *.pem
 *.env
 *.log
+.git
+.gitignore
 .DS_STORE
+__pycache__/
+*/__pycache__/
+Dockerfile
+README.md
+/import_data
+postgres-up.sh
