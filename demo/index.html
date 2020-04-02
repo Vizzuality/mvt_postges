@@ -41,7 +41,7 @@ var map = new mapboxgl.Map({
             'postgis-tiles': {
                 'type': 'vector',
                 'tiles': [
-                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(wkb_geometry, 3857) as the_geom_webmercator from mgis_point_data"
+                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(geom, 3857) as the_geom_webmercator from mgis_point_data"
                 ]
             },
             'postgis-geojson': {
@@ -55,7 +55,7 @@ var map = new mapboxgl.Map({
                 //     'mag2': ['+', ['case', mag2, 1, 0]],
                 //     'mag3': ['+', ['case', mag3, 1, 0]],
                 //     },
-                'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) from mgis_point_data as t"
+                'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from mgis_point_data as t"
                 
             }
 
@@ -110,8 +110,8 @@ map.on('load', function() {
     map.addLayer({
             id: 'clusters',
             type: 'circle',
-            'source': 'postgis-tiles',
-            'source-layer': 'layer0',
+            'source': 'postgis-geojson',
+            
             filter: ['has', 'point_count'],
             paint: {
             // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
@@ -143,8 +143,8 @@ map.on('load', function() {
     map.addLayer({
     id: 'cluster-count',
     type: 'symbol',
-    'source': 'postgis-tiles',
-    'source-layer': 'layer0',
+    'source': 'postgis-geojson',
+    
     filter: ['has', 'point_count'],
     layout: {
     'text-field': '{point_count_abbreviated}',
@@ -187,17 +187,16 @@ var features = map.queryRenderedFeatures(e.point, {
 layers: ['clusters']
 });
 var clusterId = features[0].properties.cluster_id;
-map.getSource('postgis-tiles').getClusterExpansionZoom(
+map.getSource('postgis-geojson').getClusterExpansionZoom(
 clusterId,
 function(err, zoom) {
-if (err) return;
+    if (err) return;
  
-map.easeTo({
-center: features[0].geometry.coordinates,
-zoom: zoom
-});
-}
-);
+        map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: zoom
+        });
+    });
 });
 
 map.on('click', 'unclustered-point', function(e) {

@@ -171,7 +171,7 @@ async def get_mvt(request):
     #final_query = f"EXECUTE gettile_{query_id}({request.query['sql']}, {request.match_info['z']}, {request.match_info['x']}, {request.match_info['y']});"
     final_query = f"""SELECT ST_ASMVT(tile.*, 'layer0', 4096, 'mvtgeometry', 'ogc_fid') as tile
                   FROM (SELECT *, ST_AsMVTGeom(the_geom_webmercator, ST_TileEnvelope({request.match_info['z']},{request.match_info['x']},{request.match_info['y']}), 4096, 256, true) AS mvtgeometry
-                            FROM (select *, st_transform(geom, 3857) as the_geom_webmercator from mgis_point_data) as data 
+                            FROM ({user_query}) as data 
                         WHERE ST_AsMVTGeom(the_geom_webmercator, ST_TileEnvelope({request.match_info['z']},{request.match_info['x']},{request.match_info['y']}),4096,0,true) IS NOT NULL) AS tile;
                     """
     logging.info(f"[Tile query]: {final_query}")
@@ -200,7 +200,7 @@ async def hello_world(request):
         logging.debug(f"[query:output]: {type(output)}") 
         logging.debug(f"[query:output]: {type(output)}") 
         
-        return web.Response(text=json.dumps({'data':output}, cls=JSONDateEncoder),
+        return web.Response(text=json.dumps(output[0]['geojson'], cls=JSONDateEncoder),
                                     headers=headers,
                                     status=200)
     except Exception as e:
