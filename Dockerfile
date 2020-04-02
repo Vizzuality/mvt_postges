@@ -5,7 +5,7 @@ ENV USER maptest
 RUN apt-get update && apt-get install -y bash git gcc 
 RUN addgroup $USER && useradd -ms /bin/bash $USER -g $USER
 
-WORKDIR /opt
+WORKDIR /mgis
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 

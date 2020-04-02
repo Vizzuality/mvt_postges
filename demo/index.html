@@ -4,8 +4,8 @@
     <meta charset='utf-8' />
     <title>Mapbox GL JS Examples</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.1.0/mapbox-gl.js'></script>
-    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.1.0/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.9.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.9.0/mapbox-gl.css' rel='stylesheet' />
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -16,6 +16,11 @@
 <div id='map'></div>
 <script>
 var hoveredStateId = null;
+// filters for classifying earthquakes into five categories based on magnitude
+var mag1 = ['match', ['get', 'segment'], 'Petcare'];
+var mag2 = ['match', ['get', 'segment'], 'Mars Wrigley'];
+var mag3 = ['match', ['get', 'segment'], null];
+var colors = ['#fed976', '#feb24c', '#fd8d3c'];
 var map = new mapboxgl.Map({
     'container': 'map',
     'zoom': 5,
@@ -36,41 +41,117 @@ var map = new mapboxgl.Map({
             'postgis-tiles': {
                 'type': 'vector',
                 'tiles': [
-                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf"
+                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(wkb_geometry, 3857) as the_geom_webmercator from mgis_point_data"
                 ]
+            },
+            'postgis-geojson': {
+                'type': 'geojson',
+                'cluster': true,
+                'clusterMaxZoom': 10, // Max zoom to cluster points on
+                'clusterRadius': 50, // Radius of each cluster when clustering points (defaults to 50)
+                // 'clusterProperties': {
+                //     // keep separate counts for each magnitude category in a cluster
+                //     'mag1': ['+', ['case', mag1, 1, 0]],
+                //     'mag2': ['+', ['case', mag2, 1, 0]],
+                //     'mag3': ['+', ['case', mag3, 1, 0]],
+                //     },
+                'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) from mgis_point_data as t"
+                
             }
 
         },
+        //"sprite": "mapbox://sprites/mapbox/bright-v8",
+        'glyphs': "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
         'layers': [{
             'id': 'carto-dark-layer',
             'type': 'raster',
             'source': 'carto-dark',
             'minzoom': 0,
             'maxzoom': 22
-        },{
-            'id': 'postgis-tiles-layer',
-            'type': 'fill',
-            'source': 'postgis-tiles',
-            // ST_AsMVT() uses 'default' as layer name
-            'source-layer': 'layer0', 
-            'minzoom': 0,
-            'maxzoom': 22,
-            'paint': {
-                'fill-opacity': [
-                                'case',
-                                ['boolean', ['feature-state', 'hover'], false],
-                                1,
-                                0.5
-                                ],
-                'fill-color': 'red'
+        },
+        // {
+        //     'id': 'postgis-tiles-layer',
+        //     'type': 'fill',
+        //     'source': 'postgis-tiles',
+        //     // ST_AsMVT() uses 'layer0' as layer name
+        //     'source-layer': 'layer0', 
+        //     'minzoom': 0,
+        //     'maxzoom': 22,
+        //     'paint': {
+        //         'fill-opacity': [
+        //                         'case',
+        //                         ['boolean', ['feature-state', 'hover'], false],
+        //                         1,
+        //                         0.5
+        //                         ],
+        //         'fill-color': 'red'
+        //     }
+        // },
+        {
+        'id': 'unclustered-point',
+        'type': 'circle',
+        'source': 'postgis-tiles',
+        'source-layer': 'layer0',
+        'filter': ['!', ['has', 'point_count']],
+        'paint': {
+        'circle-color': '#11b4da',
+        'circle-radius': 4,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#fff'
             }
-        }]
+        }
+        ]
     }
 });
 
 
 map.addControl(new mapboxgl.NavigationControl());
 map.on('load', function() {
+    map.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            'source': 'postgis-tiles',
+            'source-layer': 'layer0',
+            filter: ['has', 'point_count'],
+            paint: {
+            // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+            // with three steps to implement three types of circles:
+            //   * Blue, 20px circles when point count is less than 100
+            //   * Yellow, 30px circles when point count is between 100 and 750
+            //   * Pink, 40px circles when point count is greater than or equal to 750
+            'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#51bbd6',
+            100,
+            '#f1f075',
+            750,
+            '#f28cb1'
+            ],
+            'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            20,
+            100,
+            30,
+            750,
+            40
+            ]
+            }
+            });
+ 
+    map.addLayer({
+    id: 'cluster-count',
+    type: 'symbol',
+    'source': 'postgis-tiles',
+    'source-layer': 'layer0',
+    filter: ['has', 'point_count'],
+    layout: {
+    'text-field': '{point_count_abbreviated}',
+    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+    'text-size': 12
+    }
+    });
     map.on('mousemove', 'postgis-tiles-layer', function(e) {
         if (e.features.length > 0) {
             console.info(e.features[0])
@@ -100,6 +181,45 @@ map.on('load', function() {
     }
     hoveredStateId = null;
     });
+    // inspect a cluster on click
+map.on('click', 'clusters', function(e) {
+var features = map.queryRenderedFeatures(e.point, {
+layers: ['clusters']
+});
+var clusterId = features[0].properties.cluster_id;
+map.getSource('postgis-tiles').getClusterExpansionZoom(
+clusterId,
+function(err, zoom) {
+if (err) return;
+ 
+map.easeTo({
+center: features[0].geometry.coordinates,
+zoom: zoom
+});
+}
+);
+});
+
+map.on('click', 'unclustered-point', function(e) {
+ 
+var coordinates = e.features[0].geometry.coordinates.slice();
+var mag = e.features[0].properties.segment;
+while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+}
+ 
+new mapboxgl.Popup()
+.setLngLat(coordinates)
+.setHTML("magnitude: " + mag)
+.addTo(map);
+});
+ 
+map.on('mouseenter', 'clusters', function() {
+map.getCanvas().style.cursor = 'pointer';
+});
+map.on('mouseleave', 'clusters', function() {
+map.getCanvas().style.cursor = '';
+});
 });
 </script>
 

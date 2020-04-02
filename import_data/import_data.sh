@@ -1,0 +1,25 @@
+# create an array with all the filer/dir inside ~/myDir
+if psql -U ${user} -h ${psqlHost} -lqt | cut -d \| -f 1 | grep -qw ${database}
+then
+    # database exists
+    echo '\033[94mNOTICE:\033[0m  Database \033[94m '${database}' \033[0m exists'
+    #dropdb ${database} -U ${user}
+    #createdb ${database} -U ${user}
+else
+    echo '\033[94mNOTICE:\033[0m  Database does not exist; creating \033[94m '${database}' \033[0m ...'
+    ## this will help us create the database
+	createdb ${database} -U ${user}
+
+fi
+
+
+for f in "$search_dir"data/*.shp
+do
+    out="$(basename -s .shp $f)"
+    
+    echo 'Importing... '$out
+    
+    ogr2ogr -nlt PROMOTE_TO_MULTI -lco ENCODING=UTF-8 -lco GEOM_TYPE=geometry -lco GEOMETRY_NAME=geom -lco SPATIAL_INDEX=YES -lco LAUNDER=YES --config PG_USE_COPY YES -f PGDump ./$out.sql $f
+    psql -U ${user} -d ${database} -f ./$out.sql
+    rm ./$out.sql
+done

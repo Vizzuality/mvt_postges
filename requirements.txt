@@ -1,6 +1,8 @@
-aiohttp
+aiohttp>=3.6.2
 aiohttp-apispec
+aiohttp-cache
 aiohttp-swagger
 aiopg[sa]
+aiohttp-devtools>=0.13.1
 sqlalchemy
 psycopg2== 2.8.4
