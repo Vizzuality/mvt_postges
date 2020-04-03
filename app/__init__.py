@@ -151,7 +151,7 @@ async def close_pg(app):
 routes = web.RouteTableDef()
 
 ####TILES endpoint
-@cache()
+#@cache()
 @docs(tags=['tiles endpoint'],
       summary='Test method summary',
       description='Test method description')
@@ -181,7 +181,7 @@ async def get_mvt(request):
     return web.Response(body= content, headers=headers)
 
 ####QUERY endpoint
-@cache()
+#@cache()
 @docs(tags=['query endpoint'],
       summary='Allow queries to the selected database',
       description='Test method description')

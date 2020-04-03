@@ -27,13 +27,13 @@ def create_app():
     app = web.Application()
     app['config'] = os.environ
     url = yarl.URL(app['config']["REDIS_CACHE"])
-    setup_cache(
-        app,
-        cache_type="redis",
-        backend_config=RedisConfig(
-            db=int(url.path[1:]), host=url.host, port=url.port
-            ),
-    )
+    # setup_cache(
+    #     app,
+    #     cache_type="redis",
+    #     backend_config=RedisConfig(
+    #         db=int(url.path[1:]), host=url.host, port=url.port
+    #         ),
+    # )
     
     app.on_startup.append(setup_logging)
     app.on_startup.append(init_pg)
