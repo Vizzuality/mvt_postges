@@ -9,6 +9,11 @@ else
     echo '\033[94mNOTICE:\033[0m  Database does not exist; creating \033[94m '${database}' \033[0m ...'
     ## this will help us create the database
 	createdb ${database} -U ${user}
+    psql -U ${user} -h ${psqlHost} ${database}<<OMG
+    -- Create a group
+    CREATE EXTENSION postgis;
+OMG
+    
 
 fi
 
