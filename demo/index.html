@@ -26,6 +26,7 @@ var map = new mapboxgl.Map({
     'zoom': 5,
     'center': [14.150390625,
           0.7031073524364909], // New York
+    "light": {"intensity": 0.2},
     'style': {
         'version': 8,
         'sources': {
@@ -40,8 +41,11 @@ var map = new mapboxgl.Map({
             },
             'postgis-tiles': {
                 'type': 'vector',
+                //'minzoom':11,
+                'maxzoom': 22,
                 'tiles': [
-                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(geom, 3857) as the_geom_webmercator from mgis_point_data"
+                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(geom, 3857) as the_geom_webmercator from mgis_point_data",
+                    "http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=select *, st_transform(geom, 3857) as the_geom_webmercator from mgis_poly_centroids"
                 ]
             },
             'postgis-geojson': {
@@ -55,13 +59,13 @@ var map = new mapboxgl.Map({
                 //     'mag2': ['+', ['case', mag2, 1, 0]],
                 //     'mag3': ['+', ['case', mag3, 1, 0]],
                 //     },
-                'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from mgis_point_data as t"
+                'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from (select geom, id from mgis_poly_centroids union all select geom, id from mgis_point_data) as t"
                 
             }
 
         },
-        //"sprite": "mapbox://sprites/mapbox/bright-v8",
-        'glyphs': "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+        "sprite": "https://openmaptiles.github.io/klokantech-basic-gl-style/sprite",
+        'glyphs': "https://orangemug.github.io/font-glyphs/glyphs/{fontstack}/{range}.pbf",
         'layers': [{
             'id': 'carto-dark-layer',
             'type': 'raster',
@@ -92,12 +96,13 @@ var map = new mapboxgl.Map({
         'type': 'circle',
         'source': 'postgis-tiles',
         'source-layer': 'layer0',
-        'filter': ['!', ['has', 'point_count']],
+        'minzoom': 10,
+            'maxzoom': 22,
         'paint': {
         'circle-color': '#11b4da',
-        'circle-radius': 4,
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#fff'
+        'circle-radius': 10,
+        'circle-stroke-width': 0,
+        'circle-opacity': 0.3
             }
         }
         ]
@@ -148,7 +153,7 @@ map.on('load', function() {
     filter: ['has', 'point_count'],
     layout: {
     'text-field': '{point_count_abbreviated}',
-    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+    'text-font': ['Roboto Black'],
     'text-size': 12
     }
     });

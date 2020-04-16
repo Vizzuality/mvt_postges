@@ -11,6 +11,7 @@ services:
       password: postgres
       psqlPort: 5432
       psqlHost: 0.0.0.0
+      # PG_CONF: "max_connections=100#listen_addresses='*'#shared_buffers=128MB#dynamic_shared_memory_type=posix#log_timezone='UTC'#datestyle='iso, mdy'#timezone='UTC'#log_statement='all'#log_directory='pg_log'#log_filename='postgresql-%Y-%m-%d_%H%M%S.log'#logging_collector=on#client_min_messages=notice#log_min_messages=notice#log_line_prefix='%a %u %d %r %h %m %i %e'#log_destination='stderr'#log_rotation_size=500MB#log_error_verbosity=default"
     ports:
       - "5432:5432"
     volumes:
