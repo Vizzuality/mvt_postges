@@ -37,6 +37,8 @@ if [ "$current_os" = "ubuntu" ]; then
     RUN_DEPENDENCIES="$( set +x; echo \
         `# Required !` \
         python \
+        curl \
+        ca-certificates \
         locales \
         libreadline7 \
         zlib1g \

@@ -44,6 +44,6 @@ STOPSIGNAL SIGINT
 COPY packages/run.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/run.sh
 ENTRYPOINT ["/usr/local/bin/run.sh"]
-
+SHELL ["/bin/bash", "--login", "-c"]
 EXPOSE 5432
 CMD ["run_default"]
