@@ -112,6 +112,42 @@ var map = new mapboxgl.Map({
 
 map.addControl(new mapboxgl.NavigationControl());
 map.on('load', function() {
+    map.addSource(
+        'postgis-geojson_2', {//geojson jus has the commodity and segment - we need to add the other attributes - simple clustering
+            type: 'geojson',
+            data: "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from (select geom, id, commodity,segment from mgis_poly_centroids union all select geom, id, commodity, segment from mgis_point_data) as t",//"http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from mgis_point_data as t&format=geojson",
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 30,
+            },
+            );
+
+    map.addSource(
+        'postgis-geojson_3', { //geojson jus has the commodity and segment - we need to add the other attributes - donut clustering
+            type: 'geojson',
+            data: "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from (select geom, id, commodity, year, segment, country_is, country, region, fraction, subsegment, t1_supplie, volume, total_ghg, if_ghg_v, land, if_land_v, withdrawal, if_wdl_v, if_h2o_v, bws, origin_sup from mgis_poly_centroids union all select geom, id, commodity, year, segment, country_is, country, region, fraction, subsegment, t1_supplie, volume, total_ghg, if_ghg_v, land, if_land_v, withdrawal, if_wdl_v, if_h2o_v, bws, origin_sup from mgis_point_data) as t",
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 30,
+            clusterProperties: {
+            'seg1': ['+', ['case', seg1, 1, 0]],
+            'seg2': ['+', ['case', seg2, 1, 0]],
+            'seg3': ['+' ,['case', seg3, 1, 0]]
+                }               
+            },
+            );
+    map.addSource(
+        'choropleth_vector', { //geojson jus has the commodity and segment - we need to add the other attributes - donut clustering
+            'type': 'vector',
+            'maxzoom': 22,
+            'tiles': [
+                "http://0.0.0.0:5100/v1/tiles/{X}/{y}/{z}.pbf?sql=select *,  st_transform(geom, 3857) as the_geom_webmercator from gadm36_0_simp where gid_0 is not 'ATA'",
+            ]
+            //type: 'geojson',
+            //data:"http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) as geojson from (select geom, NAME_0 from gadm36_0_simp_pol) as t",
+            },
+            );
+
     map.addLayer({
             id: 'clusters',
             type: 'circle',
