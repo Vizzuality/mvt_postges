@@ -177,17 +177,19 @@ map.on('load', function() {
             }
         });
 
-
         var expression = ['match', ['get', 'name_0']];
         var maxValue = 4584.233695766365;
         var meanValue = 264.7127784799982;
         reducedData.forEach(function(row) {
-            var green = (row['sum'] / meanValue) * 255;
-            var color = 'rgba(' + 0 + ', ' + green + ', ' + 0 + ', 1)';
+            //filter values are calculated by quantiles on the jupyter notebook
+            const color = row['sum'] <= 8.565377414879006 ? 'rgba(217,240,163,1)':
+            (row['sum'] > 8.565377414879006 && row['sum']<= 85.91179001479341 ? 'rgba(194,230,153,1)':
+            (row['sum'] > 85.91179001479341  && row['sum']<= 189.5764430425883 ? 'rgba(120,198,121,1)':
+            (row['sum'] >189.5764430425883 && row['sum']<= 264.7127784799982 ?'rgba(49,163,84,1)':'rgba(0,104,55,1)' )));
+            
         expression.push(row['name_0'], color);
         });
         expression.push('rgba(204,204,204,1)'); // Last value is the default, used where there is no data
-
         map.addLayer(
             {
             'id': 'choropleth',
