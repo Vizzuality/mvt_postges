@@ -10,6 +10,7 @@
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
     </style>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
 
@@ -18,95 +19,7 @@
 var hoveredStateId = null;
 
 //QUERY THE DATA:
-// we will need to make this request to get the data - see the jupyter notebook
-//var url = "http://0.0.0.0:5100/v1/query?sql=SELECT json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) AS geojson FROM (SELECT u.year, u.country, SUM(u.if_ghg_v), ST_Union(U.geom) geom FROM (SELECT if_ghg_v, country, year,geom FROM mgis_point_data UNION ALL SELECT  if_ghg_v, country, year,geom FROM mgis_poly_centroids) AS u GROUP BY u.country, u.year ORDER BY u.country ) AS t"
-var maxValue = 4584.233695766365;
-var meanValue = 264.7127784799982;
-var data = [
-    {'year': 2018, 'name_0': 'Argentina', 'sum': 347.43751563152045},
-    {'year': 2018, 'name_0': 'Australia', 'sum': 492.4730577252386},
-    {'year': 2018, 'name_0': 'Austria', 'sum': 243.1308210647556},
-    {'year': 2018, 'name_0': 'Belarus', 'sum': 126.6921509007072},
-    {'year': 2018, 'name_0': 'Belgium', 'sum': 320.6448200699031},
-    {'year': 2018, 'name_0': 'Benin', 'sum': 9.6525464294907},
-    {'year': 2018, 'name_0': 'Bosnia And Herzegovina', 'sum': 1.20350960758013},
-    {'year': 2018, 'name_0': 'Brazil', 'sum': 2321.803752433495},
-    {'year': 2018, 'name_0': 'Bulgaria', 'sum': 2.69823093072661},
-    {'year': 2018, 'name_0': 'Burkina Faso', 'sum': 9.6525464294907},
-    {'year': 2018, 'name_0': 'Cambodia', 'sum': 0.888230736617595},
-    {'year': 2018, 'name_0': 'Cameroon', 'sum': 101.8929002470066},
-    {'year': 2018, 'name_0': 'Canada', 'sum': 429.15453231257885},
-    {'year': 2018, 'name_0': 'Chile', 'sum': 158.13814998038043},
-    {'year': 2018, 'name_0': 'China', 'sum': 453.53785534428937},
-    {'year': 2018, 'name_0': 'Colombia', 'sum': 24.85381799361834},
-    {'year': 2018, 'name_0': 'Costa Rica', 'sum': 2.21129372723701},
-    {'year': 2018, 'name_0': "Cote D'Ivoire", 'sum': 182.23010966390268},
-    {'year': 2018, 'name_0': 'Croatia', 'sum': 16.18699101744084},
-    {'year': 2018, 'name_0': 'Czech Republic', 'sum': 86.51297240779716},
-    {'year': 2018, 'name_0': 'Denmark', 'sum': 230.88006217911328},
-    {'year': 2018, 'name_0': 'Dominican Republic', 'sum': 19.0858920788464},
-    {'year': 2018, 'name_0': 'Ecuador', 'sum': 163.08503137977493},
-    {'year': 2018, 'name_0': 'Estonia', 'sum': 129.80193041429436},
-    {'year': 2018, 'name_0': 'Fiji', 'sum': 0.774834386693613},
-    {'year': 2018, 'name_0': 'Finland', 'sum': 124.6349065563775},
-    {'year': 2018, 'name_0': 'France', 'sum': 564.5037639222332},
-    {'year': 2018, 'name_0': 'Germany', 'sum': 1176.3204849992956},
-    {'year': 2018, 'name_0': 'Ghana', 'sum': 131.63569397576208},
-    {'year': 2018, 'name_0': 'Global/Unknown', 'sum': 143.2104445337536},
-    {'year': 2018, 'name_0': 'Greece', 'sum': 0.101070073758932},
-    {'year': 2018, 'name_0': 'Guatemala', 'sum': 2.21129372723701},
-    {'year': 2018, 'name_0': 'Honduras', 'sum': 2.21129372723701},
-    {'year': 2018, 'name_0': 'Hungary', 'sum': 375.4719309832097},
-    {'year': 2018, 'name_0': 'Iceland', 'sum': 3.099337546774452},
-    {'year': 2018, 'name_0': 'India', 'sum': 4584.233695766365},
-    {'year': 2018, 'name_0': 'Indonesia', 'sum': 150.89786342271913},
-    {'year': 2018, 'name_0': 'Ireland', 'sum': 75.41147379079794},
-    {'year': 2018, 'name_0': 'Israel', 'sum': 19.6637483885004},
-    {'year': 2018, 'name_0': 'Italy', 'sum': 127.07732758815519},
-    {'year': 2018, 'name_0': 'Japan', 'sum': 40.65273994289956},
-    {'year': 2018, 'name_0': 'Latvia', 'sum': 112.84073479469897},
-    {'year': 2018, 'name_0': 'Lithuania', 'sum': 112.99054865466981},
-    {'year': 2018, 'name_0': 'Luxembourg', 'sum': 25.74790387323686},
-    {'year': 2018, 'name_0': 'Madagascar', 'sum': 10.2665764771769},
-    {'year': 2018, 'name_0': 'Malaysia', 'sum': 17.62010797548317},
-    {'year': 2018, 'name_0': 'Mali', 'sum': 9.6525464294907},
-    {'year': 2018, 'name_0': 'Mauritania', 'sum': 0.968542983148867},
-    {'year': 2018, 'name_0': 'Mexico', 'sum': 197.30930856449672},
-    {'year': 2018, 'name_0': 'Moldova', 'sum': 0.61719733072661},
-    {'year': 2018, 'name_0': 'Morocco', 'sum': 0.968542983148867},
-    {'year': 2018, 'name_0': 'Netherlands', 'sum': 223.38792194161442},
-    {'year': 2018, 'name_0': 'New Zealand', 'sum': 809.0214522232328},
-    {'year': 2018, 'name_0': 'Nicaragua', 'sum': 1.10017608530457},
-    {'year': 2018, 'name_0': 'Nigeria', 'sum': 114.9510205966452},
-    {'year': 2018, 'name_0': 'Norway', 'sum': 128.78739563819576},
-    {'year': 2018, 'name_0': 'Pakistan', 'sum': 4.113},
-    {'year': 2018, 'name_0': 'Panama', 'sum': 1.11111764193244},
-    {'year': 2018, 'name_0': 'Papua New Guinea', 'sum': 96.89380021920292},
-    {'year': 2018, 'name_0': 'Peru', 'sum': 186.99882120195213},
-    {'year': 2018, 'name_0': 'Philippines', 'sum': 5.149265730907132},
-    {'year': 2018, 'name_0': 'Poland', 'sum': 1443.4535145161155},
-    {'year': 2018, 'name_0': 'Portugal', 'sum': 39.95631139896597},
-    {'year': 2018, 'name_0': 'Romania', 'sum': 3.28705599589791},
-    {'year': 2018, 'name_0': 'Russian Federation', 'sum': 478.7439651410051},
-    {'year': 2018, 'name_0': 'Serbia', 'sum': 5.30387037104392},
-    {'year': 2018, 'name_0': 'Slovakia', 'sum': 175.17083336615886},
-    {'year': 2018, 'name_0': 'Slovenia', 'sum': 22.61492749279384},
-    {'year': 2018, 'name_0': 'South Africa', 'sum': 42.86126471196937},
-    {'year': 2018, 'name_0': 'Spain', 'sum': 252.69761099430085},
-    {'year': 2018, 'name_0': 'Sweden', 'sum': 85.31060762178967},
-    {'year': 2018, 'name_0': 'Taiwan', 'sum': 3.202389054132196},
-    {'year': 2018, 'name_0': 'Thailand', 'sum': 99.12320823563915},
-    {'year': 2018, 'name_0': 'Togo', 'sum': 10.33483131454004},
-    {'year': 2018, 'name_0': 'Turkey', 'sum': 1.59203576291061},
-    {'year': 2018, 'name_0': 'Ukraine', 'sum': 23.88757754578732},
-    {'year': 2018, 'name_0': 'United Kingdom', 'sum': 474.77352906371715},
-    {'year': 2018,'name_0': 'United States of America','sum': 2453.3067597302966},
-    {'year': 2018, 'name_0': 'Uruguay', 'sum': 81.13484929925318},
-    {'year': 2018, 'name_0': 'Vietnam', 'sum': 23.81053140069419}
-    ];
-
-//console.log(data)
-
+var url = "http://0.0.0.0:5100/v1/query?sql=SELECT json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) AS geojson FROM (SELECT u.year, u.country, SUM(u.if_ghg_v), ST_Union(U.geom) geom FROM (SELECT if_ghg_v, country, year,geom FROM mgis_point_data UNION ALL SELECT  if_ghg_v, country, year,geom FROM mgis_poly_centroids) AS u GROUP BY u.country, u.year ORDER BY u.country ) AS t"
 
 // filters for classifying earthquakes into five categories based on magnitude
 var seg1 = ["any", false, ["==", ["get", "segment"], "Petcare"]]
@@ -243,58 +156,52 @@ map.on('load', function() {
             //'tiles':["http://0.0.0.0:5100/v1/tiles/{z}/{x}/{y}.pbf?sql=SSELECT json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) AS geojson FROM (SELECT * FROM (SELECT u.year, u.country, SUM(u.if_ghg_v), ST_Union(U.geom) geom FROM (SELECT if_ghg_v, country, year,geom FROM mgis_point_data  UNION ALL SELECT  if_ghg_v, country, year,geom FROM mgis_poly_centroids) AS u GROUP BY u.country, u.year ORDER BY u.country ) AS m LEFT JOIN (SELECT *, st_transform(geom, 3857) as the_geom_webmercator FROM gadm36_0_simp WHERE gid_0 NOT LIKE 'ATA') AS x ON m.country = x.NAME_0) AS t"]
             },
             );
-    // map.addSource(
-    //     'impact_json', { //geojson jus has the commodity and segment - we need to add the other attributes - donut clustering
-    //         'type': 'geojson',
-    //         'data': "http://0.0.0.0:5100/v1/query?sql=select json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) AS geojson FROM (SELECT u.year, u.country, SUM(u.if_ghg_v), ST_Union(U.geom) geom FROM (SELECT if_ghg_v, country, year,geom FROM mgis_point_data UNION ALL SELECT  if_ghg_v, country, year,geom FROM mgis_poly_centroids) AS u GROUP BY u.country, u.year ORDER BY u.country ) AS t",
-    //         },
-    //         );
-    var expression = ['match', ['get', 'name_0']];
 
-    // Calculate color for each state based on the unemployment rate
-    data.forEach(function(row) {
-    var green = (row['sum'] / meanValue) * 255;
-    var color = 'rgba(' + 0 + ', ' + green + ', ' + 0 + ', 1)';
-    expression.push(row['name_0'], color);
-    });
+     axios.get(url)
+     .then(({data})=>{
+        const features = data['features']
 
-    // Last value is the default, used where there is no data
-    expression.push('rgba(204,204,204,1)');
+        const reducedData = [];//filter data by year
+        features.forEach(d =>{
+
+            const year = d.properties.year
+            const filter_data = year && year == 2018 ? d.properties : null;
+            const name_0 = filter_data ? filter_data.country : null;
+            if (filter_data != null){
+                filter_data['name_0']=name_0 //Adds name_0 to link with gdam but we will replace later with iso 
+            }
+
+            if (filter_data != null) {
+                reducedData.push(
+                    filter_data)
+            }
+        });
+
+
+        var expression = ['match', ['get', 'name_0']];
+        var maxValue = 4584.233695766365;
+        var meanValue = 264.7127784799982;
+        reducedData.forEach(function(row) {
+            var green = (row['sum'] / meanValue) * 255;
+            var color = 'rgba(' + 0 + ', ' + green + ', ' + 0 + ', 1)';
+        expression.push(row['name_0'], color);
+        });
+        expression.push('rgba(204,204,204,1)'); // Last value is the default, used where there is no data
+
+        map.addLayer(
+            {
+            'id': 'choropleth',
+            'type': 'fill',
+            'source': 'gdam_vector',
+            'source-layer': 'layer0',
+            'paint': {
+                'fill-color': expression,
+                'fill-outline-color':'#f7f7f7'
+                }
+    }
+    ); 
+     })
     
-    // Add layer from the vector tile source with data-driven style
-    map.addLayer(
-    {
-    'id': 'choropleth',
-    'type': 'fill',
-    'source': 'gdam_vector',
-    'source-layer': 'layer0',
-    'paint': {
-    'fill-color': expression,
-    'fill-outline-color':'#f7f7f7'
-    }
-    }
-    );
-    console.log('DATA', data)
-
-    // map.addLayer({
-    // 'id': 'choropleth',
-    // 'type': 'fill',
-    // 'source': 'gdam_vector',
-    // "source-layer":"layer0",
-    // 'paint': {
-    //     'fill-color':'#ccc',
-    //     'fill-outline-color':'#f7f7f7'
-    // }
-    // });
-
-    // map.addLayer({
-    // 'id': 'choropleth_impacts',
-    // 'type': 'circle',
-    // 'source': 'impact_json',
-    // //"source-layer":"layer0",
-    // 'paint': {
-    // }
-    // });
 
     // --------------------CONFIG FOR SIMPLE CLUSTERING -----------------------////
     
